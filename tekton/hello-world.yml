@@ -1,0 +1,50 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: playground-git
+spec:
+  type: git
+  params:
+    - name: revision
+      value: master
+    - name: url
+      value: https://github.com/javib51/k8s-playground
+# ---
+# apiVersion: tekton.dev/v1alpha1
+# kind: PipelineResource
+# metadata:
+#   name: skaffold-image-leeroy-web
+# spec:
+#   type: image
+#   params:
+#     - name: url
+#       value: docker.pkg.github.com/javib51/k8s-playground/hello-world
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: echo-hello-world
+spec:
+  resources:
+    inputs:
+      - name: playground-git
+        type: git
+  steps:
+    - name: echo
+      image: ubuntu
+      # command:
+      #   - echo
+      # args:
+      #   - "Hello World"
+      script: |
+        echo "Hello World"
+        ls
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  name: echo-hello-world-task-run
+spec:
+  taskRef:
+    name: echo-hello-world
