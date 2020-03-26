@@ -1,4 +1,11 @@
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tutorial-service
+secrets:
+  - name: regcred
+---
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
@@ -30,19 +37,19 @@ spec:
     - name: pathToDockerFile
       type: string
       description: The path to the dockerfile to build
-      default: /workspace/docker-source/Dockerfile
+      default: /workspace/playground-git-input/Dockerfile
     - name: pathToContext
       type: string
       description: |
         The build context used by Kaniko
         (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
-      default: /workspace/docker-source
+      default: /workspace/playground-git-input
   resources:
     inputs:
       - name: playground-git-input
         type: git
     outputs:
-      - name: playground-image-image
+      - name: playground-image-output
         type: image
   steps:
     - name: build-and-push
@@ -55,7 +62,7 @@ spec:
         - /kaniko/executor
       args:
         - --dockerfile=$(params.pathToDockerFile)
-        - --destination=$(resources.outputs.playground-image.url)
+        - --destination=$(resources.outputs.playground-image-output.url)
         - --context=$(params.pathToContext)
 ---
 apiVersion: tekton.dev/v1beta1
@@ -65,18 +72,18 @@ metadata:
 spec:
   serviceAccountName: tutorial-service
   taskRef:
-    name: build-docker-image-from-git-source
+    name: echo-hello-world
   params:
     - name: pathToDockerFile
       value: Dockerfile
     - name: pathToContext
-      value: /workspace/docker-source/examples/microservices/leeroy-web #configure: may change according to your source
+      value: /workspace/playground-git-input/hello-world #configure: may change according to your source
   resources:
     inputs:
-      - name: docker-source
+      - name: playground-git-input
         resourceRef:
-          name: skaffold-git
+          name: playground-git-resource
     outputs:
-      - name: builtImage
+      - name: playground-image-output
         resourceRef:
-          name: skaffold-image-leeroy-web
+          name: playground-image-resource
