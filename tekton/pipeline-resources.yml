@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: playground-git-resource
+spec:
+  type: git
+  params:
+    - name: revision
+      value: master
+    - name: url
+      value: https://github.com/javib51/k8s-playground
+---
+ apiVersion: tekton.dev/v1alpha1
+ kind: PipelineResource
+ metadata:
+   name: playground-image-resource
+ spec:
+   type: image
+   params:
+     - name: url
+       value: jjjbawy2x9/hello-world
