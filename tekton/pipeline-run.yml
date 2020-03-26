@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: hello-world-pipeline-run-1
+spec:
+  serviceAccountName: hello-world-service
+  pipelineRef:
+    name: hello-world-pipeline
+  resources:
+    - name: hello-world-repo
+      resourceRef:
+        name: playground-git-resource
+    - name: hello-world-image
+      resourceRef:
+        name: playground-image-resource
