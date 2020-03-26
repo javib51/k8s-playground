@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
-  name: playground-git
+  name: playground-git-resource
 spec:
   type: git
   params:
@@ -10,41 +10,73 @@ spec:
       value: master
     - name: url
       value: https://github.com/javib51/k8s-playground
-# ---
-# apiVersion: tekton.dev/v1alpha1
-# kind: PipelineResource
-# metadata:
-#   name: skaffold-image-leeroy-web
-# spec:
-#   type: image
-#   params:
-#     - name: url
-#       value: docker.pkg.github.com/javib51/k8s-playground/hello-world
+---
+ apiVersion: tekton.dev/v1alpha1
+ kind: PipelineResource
+ metadata:
+   name: playground-image-resource
+ spec:
+   type: image
+   params:
+     - name: url
+       value: jjjbawy2x9/hello-world
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: echo-hello-world
 spec:
+  params:
+    - name: pathToDockerFile
+      type: string
+      description: The path to the dockerfile to build
+      default: /workspace/docker-source/Dockerfile
+    - name: pathToContext
+      type: string
+      description: |
+        The build context used by Kaniko
+        (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+      default: /workspace/docker-source
   resources:
     inputs:
-      - name: playground-git
+      - name: playground-git-input
         type: git
+    outputs:
+      - name: playground-image-image
+        type: image
   steps:
-    - name: echo
-      image: ubuntu
-      # command:
-      #   - echo
-      # args:
-      #   - "Hello World"
-      script: |
-        echo "Hello World"
-        ls
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v0.17.1
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(params.pathToDockerFile)
+        - --destination=$(resources.outputs.playground-image.url)
+        - --context=$(params.pathToContext)
 ---
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
-  name: echo-hello-world-task-run
+  name: build-docker-image-from-git-source-task-run
 spec:
+  serviceAccountName: tutorial-service
   taskRef:
-    name: echo-hello-world
+    name: build-docker-image-from-git-source
+  params:
+    - name: pathToDockerFile
+      value: Dockerfile
+    - name: pathToContext
+      value: /workspace/docker-source/examples/microservices/leeroy-web #configure: may change according to your source
+  resources:
+    inputs:
+      - name: docker-source
+        resourceRef:
+          name: skaffold-git
+    outputs:
+      - name: builtImage
+        resourceRef:
+          name: skaffold-image-leeroy-web
